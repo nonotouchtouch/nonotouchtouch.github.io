@@ -145,19 +145,29 @@ h4{
 
 
 </style>
+<script type="text/javascript" charset="UTF-8">
+    var i = 0;
+
+    function showTimes() {
+        i=i+1;
+        alert("本次您已连续感恩"+i+"次。")
+
+    }
+</script>
 <body>  
     <div id="hello">  
         <h1>感恩吧</h1>
         <h4>欢迎您</h4>
        
          <p id="img-wrap">  
-    <img src="img/1.jpg">  
-    <img src="img/2.jpg">  
-    <img src="img/3.jpg">  
-    <img src="img/4.jpg">  
+    <img src="img/1.png">
+    <img src="img/2.png">
+    <img src="img/3.png">
+    <img src="img/4.png">
    		</p>
-         <center><button class="intro" onclick="alert('感恩的心，感谢有你！')">感恩</button></center>
+         <center><button class="intro" onclick=showTimes()>感恩</button></center>
         
     </div>  
-</body>  
+</body>
+
 </html>  
