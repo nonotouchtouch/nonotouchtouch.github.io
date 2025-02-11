@@ -18,29 +18,88 @@
     </style>
 </head>
 <body>
-<h1>五子棋游戏</h1>
-<table id="board">
-    <!-- 这里将通过JavaScript动态生成棋盘 -->
-</table>
-<script>
-    // 棋盘大小
-    const boardSize = 15;
+    <h1>五子棋游戏</h1>
+    <table id="board">
+        <!-- 这里将通过JavaScript动态生成棋盘 -->
+    </table>
+    <script>
+        // 棋盘大小
+        const boardSize = 15;
 
-    // 创建棋盘
-    const board = document.getElementById('board');
-    for (let i = 0; i < boardSize; i++) {
-        const row = board.insertRow();
-        for (let j = 0; j < boardSize; j++) {
-            const cell = row.insertCell();
-            cell.addEventListener('click', () => placePiece(i, j));
+        // 当前玩家
+        let currentPlayer = 'black';
+
+        // 创建棋盘
+        const board = document.getElementById('board');
+        for (let i = 0; i < boardSize; i++) {
+            const row = board.insertRow();
+            for (let j = 0; j < boardSize; j++) {
+                const cell = row.insertCell();
+                cell.addEventListener('click', () => placePiece(i, j));
+            }
         }
-    }
 
-    // 放置棋子
-    function placePiece(row, col) {
-        const cell = board.rows[row].cells[col];
-        cell.innerHTML = '●'; // 这里可以根据玩家交替放置不同颜色的棋子
-    }
-</script>
+        // 放置棋子
+        function placePiece(row, col) {
+            const cell = board.rows[row].cells[col];
+            if (cell.innerHTML === '') {
+                cell.innerHTML = currentPlayer === 'black' ? '●' : '○';
+                if (checkWin(row, col)) {
+                    alert(`${currentPlayer} 获胜！`);
+                    resetBoard();
+                } else {
+                    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
+                }
+            }
+        }
+
+        // 检查是否胜利
+        function checkWin(row, col) {
+            const directions = [
+                { x: 1, y: 0 }, // 水平
+                { x: 0, y: 1 }, // 垂直
+                { x: 1, y: 1 }, // 右下
+                { x: 1, y: -1 } // 右上
+            ];
+
+            for (const dir of directions) {
+                let count = 1;
+                for (let i = 1; i < 5; i++) {
+                    const newRow = row + dir.x * i;
+                    const newCol = col + dir.y * i;
+                    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize &&
+                        board.rows[newRow].cells[newCol].innerHTML === currentPlayer) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                for (let i = 1; i < 5; i++) {
+                    const newRow = row - dir.x * i;
+                    const newCol = col - dir.y * i;
+                    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize &&
+                        board.rows[newRow].cells[newCol].innerHTML === currentPlayer) {
+                        count++;
+                    } else {
+                        break;
+                    }
+                }
+                if (count >= 5) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // 重置棋盘
+        function resetBoard() {
+            for (let i = 0; i < boardSize; i++) {
+                for (let j = 0; j < boardSize; j++) {
+                    board.rows[i].cells[j].innerHTML = '';
+                }
+            }
+            currentPlayer = 'black';
+        }
+    </script>
 </body>
 </html>
