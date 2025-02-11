@@ -1,105 +1,165 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>五子棋游戏</title>
     <style>
-        table {
-            border-collapse: collapse;
-        }
-        td {
-            width: 50px;
-            height: 50px;
-            border: 1px solid black;
+        .container { display: none; }
+        #board { border: 2px solid #000; background: #ffd700; }
+        .cell { 
+            width: 40px; height: 40px; 
+            border: 1px solid #999;
+            display: inline-block;
+            vertical-align: top;
             text-align: center;
-            vertical-align: middle;
+            cursor: pointer;
         }
+        .stone {
+            width: 30px; height: 30px;
+            border-radius: 50%;
+            margin: 5px;
+        }
+        .black { background: #000; }
+        .white { background: #fff; border: 1px solid #000; }
     </style>
 </head>
 <body>
-    <h1>五子棋游戏</h1>
-    <table id="board">
-        <!-- 这里将通过JavaScript动态生成棋盘 -->
-    </table>
-    <script>
-        // 棋盘大小
-        const boardSize = 15;
+    <!-- 密码验证 -->
+    <div id="password">
+        输入密码开始: <input type="password" id="pwd">
+        <button onclick="checkPwd()">确认</button>
+    </div>
 
-        // 当前玩家
-        let currentPlayer = 'black';
+    <!-- 用户注册 -->
+    <div id="users" style="display:none;">
+        玩家1: <input type="text" id="player1">
+        玩家2: <input type="text" id="player2">
+        <button onclick="startGame()">开始游戏</button>
+    </div>
 
-        // 创建棋盘
-        const board = document.getElementById('board');
-        for (let i = 0; i < boardSize; i++) {
-            const row = board.insertRow();
-            for (let j = 0; j < boardSize; j++) {
-                const cell = row.insertCell();
-                cell.addEventListener('click', () => placePiece(i, j));
+    <!-- 游戏界面 -->
+    <div class="container">
+        <h2>当前玩家: <span id="currentPlayer">黑方</span></h2>
+        <div id="board"></div>
+        <div id="result"></div>
+        <button onclick="resetGame()">重新开始</button>
+        <h3>战绩统计</h3>
+        <div id="record"></div>
+    </div>
+
+<script>
+// 游戏参数
+let boardSize = 15;
+let currentPlayer = 1; // 1: 黑棋, 2: 白棋
+let gameOver = false;
+let board = [];
+let records = JSON.parse(localStorage.getItem('records') || '{}');
+
+// 密码验证
+function checkPwd() {
+    if(document.getElementById('pwd').value === 'play') {
+        document.getElementById('password').style.display = 'none';
+        document.getElementById('users').style.display = 'block';
+    }
+}
+
+// 初始化棋盘
+function createBoard() {
+    let boardHTML = '';
+    for(let i=0; i<boardSize; i++){
+        board[i] = new Array(boardSize).fill(0);
+        for(let j=0; j<boardSize; j++){
+            boardHTML += `<div class="cell" onclick="placeStone(${i},${j})" id="cell-${i}-${j}"></div>`;
+        }
+        boardHTML += '<br>';
+    }
+    document.getElementById('board').innerHTML = boardHTML;
+    document.querySelector('.container').style.display = 'block';
+}
+
+// 开始游戏
+function startGame() {
+    let p1 = document.getElementById('player1').value;
+    let p2 = document.getElementById('player2').value;
+    if(p1 && p2) {
+        records[p1] = records[p1] || 0;
+        records[p2] = records[p2] || 0;
+        updateRecords();
+        createBoard();
+    }
+}
+
+// 落子
+function placeStone(x, y) {
+    if(gameOver || board[x][y] !== 0) return;
+    
+    board[x][y] = currentPlayer;
+    let stone = document.createElement('div');
+    stone.className = `stone ${currentPlayer === 1 ? 'black' : 'white'}`;
+    document.getElementById(`cell-${x}-${y}`).appendChild(stone);
+    
+    if(checkWin(x, y)) {
+        gameOver = true;
+        let winner = currentPlayer === 1 ? 
+            document.getElementById('player1').value : 
+            document.getElementById('player2').value;
+        records[winner]++;
+        localStorage.setItem('records', JSON.stringify(records));
+        document.getElementById('result').innerHTML = `${winner} 获胜!`;
+        updateRecords();
+        return;
+    }
+    
+    currentPlayer = currentPlayer === 1 ? 2 : 1;
+    document.getElementById('currentPlayer').textContent = 
+        currentPlayer === 1 ? document.getElementById('player1').value : 
+        document.getElementById('player2').value;
+}
+
+// 胜利检测
+function checkWin(x, y) {
+    const directions = [
+        [[-1,0], [1,0]],  // 垂直
+        [[0,-1], [0,1]],  // 水平
+        [[-1,-1], [1,1]], // 主对角线
+        [[-1,1], [1,-1]]  // 副对角线
+    ];
+
+    for(let dir of directions) {
+        let count = 1;
+        for(let side of dir) {
+            let dx = x + side[0];
+            let dy = y + side[1];
+            while(dx >=0 && dx < boardSize && dy >=0 && dy < boardSize && 
+                  board[dx][dy] === currentPlayer) {
+                count++;
+                dx += side[0];
+                dy += side[1];
             }
         }
+        if(count >= 5) return true;
+    }
+    return false;
+}
 
-        // 放置棋子
-        function placePiece(row, col) {
-            const cell = board.rows[row].cells[col];
-            if (cell.innerHTML === '') {
-                cell.innerHTML = currentPlayer === 'black' ? '●' : '○';
-                if (checkWin(row, col)) {
-                    alert(`${currentPlayer} 获胜！`);
-                    resetBoard();
-                } else {
-                    currentPlayer = currentPlayer === 'black' ? 'white' : 'black';
-                }
-            }
-        }
+// 更新战绩
+function updateRecords() {
+    let recordHTML = '';
+    for(let player in records) {
+        recordHTML += `${player}: ${records[player]}胜<br>`;
+    }
+    document.getElementById('record').innerHTML = recordHTML;
+}
 
-        // 检查是否胜利
-        function checkWin(row, col) {
-            const directions = [
-                { x: 1, y: 0 }, // 水平
-                { x: 0, y: 1 }, // 垂直
-                { x: 1, y: 1 }, // 右下
-                { x: 1, y: -1 } // 右上
-            ];
-
-            for (const dir of directions) {
-                let count = 1;
-                for (let i = 1; i < 5; i++) {
-                    const newRow = row + dir.x * i;
-                    const newCol = col + dir.y * i;
-                    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize &&
-                        board.rows[newRow].cells[newCol].innerHTML === currentPlayer) {
-                        count++;
-                    } else {
-                        break;
-                    }
-                }
-                for (let i = 1; i < 5; i++) {
-                    const newRow = row - dir.x * i;
-                    const newCol = col - dir.y * i;
-                    if (newRow >= 0 && newRow < boardSize && newCol >= 0 && newCol < boardSize &&
-                        board.rows[newRow].cells[newCol].innerHTML === currentPlayer) {
-                        count++;
-                    } else {
-                        break;
-                    }
-                }
-                if (count >= 5) {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        // 重置棋盘
-        function resetBoard() {
-            for (let i = 0; i < boardSize; i++) {
-                for (let j = 0; j < boardSize; j++) {
-                    board.rows[i].cells[j].innerHTML = '';
-                }
-            }
-            currentPlayer = 'black';
-        }
-    </script>
+// 重置游戏
+function resetGame() {
+    board = [];
+    currentPlayer = 1;
+    gameOver = false;
+    document.getElementById('result').innerHTML = '';
+    document.getElementById('currentPlayer').textContent = 
+        document.getElementById('player1').value;
+    createBoard();
+}
+</script>
 </body>
 </html>
